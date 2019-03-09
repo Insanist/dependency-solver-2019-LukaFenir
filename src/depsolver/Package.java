@@ -39,10 +39,22 @@ class PackageExpand {
         return new Package(); //TODO erm, if not in repo??
     }
 
-    public List<String> packagesToCommands(State state) {
+    public List<String> packagesToCommands(State state, State initialState) {
         List<String> commands = new ArrayList<>();
-        for(Package pack : state.getPackageList()) {
-            commands.add("+" + pack.getName() + "=" + pack.getVersion());
+        //compare state0 and initial0, if different, uninstall initial0
+        List<Package> packages = state.getPackageList();
+        List<Package> initialPackages = initialState.getPackageList();
+        for(int i = 0; i < initialState.getPackageList().size(); i++){
+            if(packages.get(0) == initialState.getPackageList().get(i)){
+                commands.add("+" + packages.get(0).getName() + "=" + packages.get(0).getVersion());
+                packages.remove(0);
+            }
+            else {
+                commands.add("-" + initialPackages.get(i).getName() + "=" + initialPackages.get(i).getVersion());
+            }
+        }
+        for(Package pack : packages) {
+            commands.add("+" + pack.getName() + "=" + pack.getVersion()); //How to get from initial state to state
         }
         return commands;
     }
@@ -122,6 +134,7 @@ public class Package {
     private List<String> conflicts = new ArrayList<>();
     private List<List<Package>> dependsExpanded = new ArrayList<>();
     private List<Package> conflictsExpanded = new ArrayList<>();
+    private boolean install = true;
 
     public String getName() { return name; }
     public String getVersion() { return version; }
@@ -130,6 +143,7 @@ public class Package {
     public List<String> getConflicts() { return conflicts; }
     public List<List<Package>> getDependsExpanded() { return dependsExpanded; } //Could remove these two? Won't need strings later
     public List<Package> getConflictsExpanded() { return conflictsExpanded; }
+    public boolean installPackage(){ return install; }
     // Used by JSON parser
     public void setName(String name) { this.name = name; }
     public void setVersion(String version) { this.version = version; }
@@ -138,6 +152,7 @@ public class Package {
     public void setConflicts(List<String> conflicts) { this.conflicts = conflicts; }
     public void addDependsExpanded(List<Package> deps) { dependsExpanded.add(deps); }
     public void addConflictsExpanded(List<Package> conf) { this.conflictsExpanded = conf; }
+    public void setUninstall() { install = false; }
 
     public void expandRepoConstraints(List<Package> raw_repo) {
         for (List<String> dependencies : getDepends()) {
